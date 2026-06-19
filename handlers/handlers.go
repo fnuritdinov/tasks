@@ -37,14 +37,11 @@ func (t *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		t.logger.Error("error from json.NewDecoder",
-			zap.Error(err))
-
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
-	err = t.service.Create(r.Context(), models.Task{
+	err = t.service.Create(r.Context(), models.Tasks{
 		Title:       req.Title,
 		Description: req.Description,
 		Status:      req.Status,
@@ -72,10 +69,6 @@ func (t *TaskHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	tasks, err := t.service.Get(r.Context())
 	if err != nil {
-		if errors.Is(err, errs.ErrNotFound) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
 		t.logger.Error("error from t.service.Get")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

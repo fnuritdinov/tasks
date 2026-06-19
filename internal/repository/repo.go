@@ -11,7 +11,7 @@ import (
 )
 
 type TaskRepo interface {
-	Create(ctx context.Context, task models.Task) error
+	Create(ctx context.Context, task models.Tasks) error
 	Get(ctx context.Context) ([]models.Task, error)
 	GetWithFilters(ctx context.Context, filter models.TaskFilter) ([]models.Task, error)
 	GetByID(ctx context.Context, id int) (models.Task, error)
@@ -29,7 +29,7 @@ func New(db *gorm.DB) TaskRepo {
 	}
 }
 
-func (r *repo) Create(ctx context.Context, task models.Task) error {
+func (r *repo) Create(ctx context.Context, task models.Tasks) error {
 	err := r.db.WithContext(ctx).Create(&task).Error
 	if err != nil {
 		return fmt.Errorf("error from db.Create %w", err)
@@ -42,9 +42,6 @@ func (r *repo) Get(ctx context.Context) ([]models.Task, error) {
 	var tasks []models.Task
 	err := r.db.WithContext(ctx).Find(&tasks).Error
 	if err != nil {
-		if errors.Is(err, errs.ErrNotFound) {
-			return []models.Task{}, errs.ErrNotFound
-		}
 		return []models.Task{}, fmt.Errorf("error from r.db.Find %w", err)
 	}
 
@@ -72,9 +69,9 @@ func (r *repo) GetWithFilters(ctx context.Context, filter models.TaskFilter) ([]
 
 func (r *repo) GetByID(ctx context.Context, id int) (models.Task, error) {
 	var task models.Task
-	err := r.db.WithContext(ctx).Find(&task, id).Error
+	err := r.db.WithContext(ctx).First(&task, id).Error
 	if err != nil {
-		if errors.Is(err, errs.ErrNotFound) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.Task{}, errs.ErrNotFound
 		}
 		return models.Task{}, fmt.Errorf("error from db.Find %w", err)

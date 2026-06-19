@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"TaskManager/pkg/errors"
+	"time"
+)
 
 type Task struct {
 	ID          uint      `gorm:"primaryKey"`
@@ -24,4 +27,11 @@ type TaskFilter struct {
 	Page   int
 	Limit  int
 	Offset int
+}
+
+func (t *Tasks) ValidateTask() error {
+	if len(t.Title) == 0 && len(t.Description) == 0 && len(t.Status) == 0 {
+		return errors.ErrFromValidate
+	}
+	return nil
 }

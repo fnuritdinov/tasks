@@ -9,7 +9,7 @@ import (
 )
 
 type TaskService interface {
-	Create(ctx context.Context, task models.Task) error
+	Create(ctx context.Context, task models.Tasks) error
 	Get(ctx context.Context) ([]models.Task, error)
 	GetWithFilters(ctx context.Context, filter models.TaskFilter) ([]models.Task, error)
 	GetByID(ctx context.Context, id int) (models.Task, error)
@@ -27,20 +27,13 @@ func New(repo repository.TaskRepo) TaskService {
 	}
 }
 
-func (s *service) Create(ctx context.Context, task models.Task) error {
-	if len(task.Description) == 0 {
-		return errors.ErrFromValidate
+func (s *service) Create(ctx context.Context, task models.Tasks) error {
+	err := task.ValidateTask()
+	if err != nil {
+		return err
 	}
 
-	if len(task.Title) == 0 {
-		return errors.ErrFromValidate
-	}
-
-	if len(task.Status) == 0 {
-		return errors.ErrFromValidate
-	}
-
-	err := s.repo.Create(ctx, task)
+	err = s.repo.Create(ctx, task)
 	if err != nil {
 		return fmt.Errorf("error from s.repo.Create %w", err)
 	}
@@ -93,11 +86,12 @@ func (s *service) Update(ctx context.Context, id int, updatedTasks models.Tasks)
 		return errors.ErrFromValidate
 	}
 
-	if len(updatedTasks.Title) == 0 && len(updatedTasks.Status) == 0 && len(updatedTasks.Description) == 0 {
-		return errors.ErrFromValidate
+	err := updatedTasks.ValidateTask()
+	if err != nil {
+		return err
 	}
 
-	err := s.repo.Update(ctx, id, updatedTasks)
+	err = s.repo.Update(ctx, id, updatedTasks)
 	if err != nil {
 		return fmt.Errorf("error from s.repo.Update %w", err)
 	}
