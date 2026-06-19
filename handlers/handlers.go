@@ -3,10 +3,8 @@ package handlers
 import (
 	"TaskManager/internal/models"
 	"TaskManager/internal/service"
-	errs "TaskManager/pkg/errors"
 	"TaskManager/pkg/logger"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -41,19 +39,14 @@ func (t *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log := t.logger.With(zap.String("handler", "Create"))
 	err = t.service.Create(r.Context(), models.Tasks{
 		Title:       req.Title,
 		Description: req.Description,
 		Status:      req.Status,
 	})
 	if err != nil {
-		if errors.Is(err, errs.ErrFromValidate) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		t.logger.Error("error from t.service.Create",
-			zap.Error(err))
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		handleError(w, log, err)
 		return
 	}
 
@@ -67,10 +60,10 @@ func (t *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (t *TaskHandler) Get(w http.ResponseWriter, r *http.Request) {
 
+	log := t.logger.With(zap.String("handler", "Get"))
 	tasks, err := t.service.Get(r.Context())
 	if err != nil {
-		t.logger.Error("error from t.service.Get")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, log, err)
 		return
 	}
 
@@ -85,18 +78,15 @@ func (t *TaskHandler) GetWithFilter(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(pageStr)
 	limit, _ := strconv.Atoi(limitStr)
 
+	log := t.logger.With(zap.String("handler", "GetWithFilter"))
+
 	tasks, err := t.service.GetWithFilters(r.Context(), models.TaskFilter{
 		Status: status,
 		Page:   page,
 		Limit:  limit,
 	})
 	if err != nil {
-		if errors.Is(err, errs.ErrNotFound) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		t.logger.Error("error from t.service.Get")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, log, err)
 		return
 	}
 
@@ -110,18 +100,11 @@ func (t *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log := t.logger.With(zap.String("handler", "GetByID"))
+
 	task, err := t.service.GetByID(r.Context(), id)
 	if err != nil {
-		if errors.Is(err, errs.ErrFromValidate) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if errors.Is(err, errs.ErrNotFound) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		t.logger.Error("error from t.service.GetByID")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, log, err)
 		return
 	}
 
@@ -144,6 +127,8 @@ func (t *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log := t.logger.With(zap.String("handler", "Update"))
+
 	err = t.service.Update(r.Context(), id, models.Tasks{
 		Description: req.Description,
 		Title:       req.Title,
@@ -151,16 +136,7 @@ func (t *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 		IsDeleted:   req.IsDeleted,
 	})
 	if err != nil {
-		if errors.Is(err, errs.ErrFromValidate) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if errors.Is(err, errs.ErrNotFound) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		t.logger.Error("error from t.service.Update")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, log, err)
 		return
 	}
 
@@ -181,14 +157,11 @@ func (t *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log := t.logger.With(zap.String("handler", "Delete"))
+
 	err = t.service.Delete(r.Context(), id)
 	if err != nil {
-		if errors.Is(err, errs.ErrNotFound) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		t.logger.Error("error from t.service.Delete")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, log, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
