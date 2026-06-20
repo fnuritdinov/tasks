@@ -28,6 +28,7 @@ type taskRequest struct {
 	Description string `json:"description"`
 	Status      string `json:"status"`
 	IsDeleted   bool   `json:"isDeleted"`
+	UserID      int    `json:"userID"`
 }
 
 func (t *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +45,7 @@ func (t *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Title:       req.Title,
 		Description: req.Description,
 		Status:      req.Status,
+		UserID:      req.UserID,
 	})
 	if err != nil {
 		handleError(w, log, err)
@@ -166,4 +168,114 @@ func (t *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 
+}
+
+type userReq struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
+func (t *TaskHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	var user userReq
+
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, "error from json.NewDecoder", http.StatusBadRequest)
+		return
+	}
+
+	log := t.logger.With(zap.String("handler", "CreateUser"))
+
+	err = t.service.CreateUser(r.Context(), models.UserReq{
+		Name: user.Name,
+		Age:  user.Age,
+	})
+	if err != nil {
+		handleError(w, log, err)
+	}
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (t *TaskHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
+	log := t.logger.With(zap.String("handler", "GetUsers"))
+
+	users, err := t.service.GetUsers(r.Context())
+	if err != nil {
+		handleError(w, log, err)
+	}
+
+	_ = json.NewEncoder(w).Encode(&users)
+}
+
+func (t *TaskHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	log := t.logger.With(zap.String("handler", "GetUserByID"))
+
+	user, err := t.service.GetUserByID(r.Context(), id)
+	if err != nil {
+		handleError(w, log, err)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(user)
+
+}
+
+func (t *TaskHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	var updateUser userReq
+
+	err = json.NewDecoder(r.Body).Decode(&updateUser)
+	if err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	log := t.logger.With(zap.String("handler", "UpdateUser"))
+
+	err = t.service.UpdateUser(r.Context(), id, models.UserReq{
+		Name: updateUser.Name,
+		Age:  updateUser.Age,
+	})
+	if err != nil {
+		handleError(w, log, err)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "user updated successfully",
+	})
+}
+
+func (t *TaskHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	if id < 1 {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	log := t.logger.With(zap.String("handler", "Delete"))
+
+	err = t.service.DeleteUser(r.Context(), id)
+	if err != nil {
+		handleError(w, log, err)
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

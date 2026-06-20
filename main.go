@@ -33,9 +33,9 @@ func main() {
 		DBName:   cfg.DBName,
 	})
 
-	err = db.AutoMigrate(&models.Task{})
+	err = db.AutoMigrate(&models.Task{}, &models.User{})
 	if err != nil {
-		fmt.Errorf("error from db.AutoMigrate %w", err)
+		log.Println("error from db.AutoMigrate %w", err)
 		return
 	}
 
@@ -44,7 +44,7 @@ func main() {
 	handlersTask := handlers.NewTaskHandlers(serviceTask, *lg)
 
 	router := handlers.New(&handlersTask)
-
+	fmt.Println("succesfull")
 	err = http.ListenAndServe(":8080", router)
 	if err != nil {
 		log.Fatal(err)

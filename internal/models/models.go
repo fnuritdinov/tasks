@@ -12,6 +12,30 @@ type Task struct {
 	Status      string    `gorm:"type:varchar(50)"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 	IsDeleted   bool      `gorm:"default:false"`
+	UserID      int       `gorm:"integer"`
+}
+
+type User struct {
+	ID        uint      `gorm:"primeryKey"`
+	Name      string    `gorm:"type:varchar(50)"`
+	Age       int       `gorm:"integer"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+}
+
+type UserReq struct {
+	ID   int
+	Name string
+	Age  int
+}
+
+func (u *UserReq) ValidateUser() error {
+	if len(u.Name) == 0 {
+		return errors.ErrFromValidate
+	}
+	if u.Age < 1 {
+		return errors.ErrFromValidate
+	}
+	return nil
 }
 
 type Tasks struct {
@@ -20,6 +44,7 @@ type Tasks struct {
 	Description string `json:"description"`
 	Status      string `json:"status"`
 	IsDeleted   bool   `json:"IsDeleted"`
+	UserID      int    `json:"userID"`
 }
 
 type TaskFilter struct {
