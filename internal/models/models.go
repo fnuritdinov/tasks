@@ -13,6 +13,7 @@ type Task struct {
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 	IsDeleted   bool      `gorm:"default:false"`
 	UserID      int       `gorm:"integer"`
+	Completed   bool      `gorm:"default:false"`
 }
 
 type User struct {
@@ -43,8 +44,10 @@ type Tasks struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Status      string `json:"status"`
-	IsDeleted   bool   `json:"IsDeleted"`
-	UserID      int    `json:"userID"`
+	CreatedAt   time.Time
+	IsDeleted   bool `json:"IsDeleted"`
+	UserID      int  `json:"userID"`
+	Completed   bool `json:"completed"`
 }
 
 type TaskFilter struct {

@@ -41,6 +41,11 @@ func (t *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log := t.logger.With(zap.String("handler", "Create"))
+
+	log.Info("create task request",
+		zap.Int("userID", req.UserID),
+	)
+
 	err = t.service.Create(r.Context(), models.Tasks{
 		Title:       req.Title,
 		Description: req.Description,
@@ -278,4 +283,41 @@ func (t *TaskHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type compliteReq struct {
+	Complited bool `json:"complited"`
+}
+
+func (t *TaskHandler) Completed(w http.ResponseWriter, r *http.Request) {
+
+	var status compliteReq
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	if id < 1 {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	err = json.NewDecoder(r.Body).Decode(&status)
+	if err != nil {
+		http.Error(w, "error from parsing", http.StatusBadRequest)
+		return
+	}
+
+	log := t.logger.With(zap.String("handlers", "Completed"))
+
+	task, err := t.service.Compiled(r.Context(), id, models.Tasks{
+		Completed: status.Complited,
+	})
+	if err != nil {
+		handleError(w, log, err)
+		return
+	}
+	_ = json.NewEncoder(w).Encode(task)
+
 }
